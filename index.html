@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kunal Sharma - AI Evaluation & Safety Specialist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    transitionTimingFunction: {
+                        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    animation: {
+                        'spin-slow': 'spin 12s linear infinite',
+                        'blob': 'blob 15s infinite alternate cubic-bezier(0.4, 0, 0.2, 1)',
+                        'float': 'float 6s ease-in-out infinite',
+                        'fade-up': 'fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'scale-in': 'scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-in': 'slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'message-in': 'messageIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'ripple': 'ripple 0.6s linear',
+                        'typing': 'typing 1.4s infinite ease-in-out both',
+                        'rubber-band': 'rubberBand 1s both',
+                        'marquee': 'marquee 40s linear infinite',
+                        'marquee-reverse': 'marqueeReverse 40s linear infinite',
+                    },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-33.33%)' },
+                        },
+                        marqueeReverse: {
+                            '0%': { transform: 'translateX(-33.33%)' },
+                            '100%': { transform: 'translateX(0%)' },
+                        },
+                        blob: {
+                            '0%': { transform: 'translate3d(0px, 0px, 0) scale(1)' },
+                            '33%': { transform: 'translate3d(30px, -50px, 0) scale(1.1)' },
+                            '66%': { transform: 'translate3d(-20px, 20px, 0) scale(0.9)' },
+                            '100%': { transform: 'translate3d(0px, 0px, 0) scale(1)' },
+                        },
+                        float: {
+                            '0%': { transform: 'translate3d(0, 0px, 0)' },
+                            '50%': { transform: 'translate3d(0, -20px, 0)' },
+                            '100%': { transform: 'translate3d(0, 0px, 0)' },
+                        },
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translate3d(0, 50px, 0) scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'translate3d(0, 0, 0) scale(1)' },
+                        },
+                        scaleIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        slideIn: {
+                            '0%': { opacity: '0', transform: 'translate3d(-30px, 0, 0)' },
+                            '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+                        },
+                        messageIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px) scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                        },
+                        ripple: {
+                            '0%': { transform: 'scale(0)', opacity: '0.5' },
+                            '100%': { transform: 'scale(20)', opacity: '0' },
+                        },
+                        typing: {
+                            '0%, 80%, 100%': { transform: 'scale(0.6) translateY(0)', opacity: '0.5' },
+                            '40%': { transform: 'scale(1) translateY(-4px)', opacity: '1' },
+                        },
+                        rubberBand: {
+                            '0%': { transform: 'scale3d(1, 1, 1)' },
+                            '30%': { transform: 'scale3d(1.25, 0.75, 1)' },
+                            '40%': { transform: 'scale3d(0.75, 1.25, 1)' },
+                            '50%': { transform: 'scale3d(1.15, 0.85, 1)' },
+                            '65%': { transform: 'scale3d(0.95, 1.05, 1)' },
+                            '75%': { transform: 'scale3d(1.05, 0.95, 1)' },
+                            '100%': { transform: 'scale3d(1, 1, 1)' },
+                        }
+                    },
+                    backgroundImage: {
+                        'grid': "linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding: 0;
+            cursor: none; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            transition: background-color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Dark mode grid update */
+        .dark body {
+             /* Handled by component logic but we can add global override if needed */
+        }
+        
+        .dark .bg-grid {
+             background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            body { cursor: auto; }
+            .cursor-hidden { display: none !important; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(236, 72, 153, 0.8); }
+
+        .preserve-3d { transform-style: preserve-3d; }
+        .glass-panel { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transform: translateZ(0); }
+        .hardware-accelerated { transform: translateZ(0); backface-visibility: hidden; will-change: transform; }
+        
+        /* Utility for marquee pausing */
+        .pause-on-hover:hover {
+            animation-play-state: paused;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "@google/genai": "https://esm.run/@google/genai"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-[#fafafa] dark:bg-[#050505] text-slate-900 dark:text-slate-100">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
