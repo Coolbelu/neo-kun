@@ -1,7 +1,64 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI, Chat } from "@google/genai";
-import { ThemeProvider, useTheme } from 'next-themes';
+// ---------- lightweight theme provider for Vite (replace next-themes) ----------
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+type Theme = "light" | "dark" | "system";
+interface ThemeContextShape {
+  theme: Theme | "light" | "dark";
+  setTheme: (t: Theme | "light" | "dark") => void;
+}
+
+const ThemeContext = createContext<ThemeContextShape | undefined>(undefined);
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode, defaultTheme?: Theme }> = ({ children, defaultTheme = "system" }) => {
+  const [theme, setThemeState] = useState<Theme | "light" | "dark">(defaultTheme);
+
+  // apply class on documentElement
+  useEffect(() => {
+    const saved = window.localStorage.getItem("site-theme") as Theme | null;
+    if (saved) {
+      setThemeState(saved);
+    } else if (defaultTheme === "system") {
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setThemeState(prefersDark ? "dark" : "light");
+    }
+
+    const onPrefChange = (e: MediaQueryListEvent) => {
+      if (theme === "system") {
+        const newTheme = e.matches ? "dark" : "light";
+        document.documentElement.classList.toggle("dark", newTheme === "dark");
+      }
+    };
+    const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+    mq?.addEventListener?.("change", onPrefChange);
+
+    return () => mq?.removeEventListener?.("change", onPrefChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once
+
+  useEffect(() => {
+    // actual effective theme (if theme === 'system', compute)
+    const effective = theme === "system"
+      ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : theme;
+    document.documentElement.classList.toggle("dark", effective === "dark");
+    try { window.localStorage.setItem("site-theme", theme); } catch {}
+  }, [theme]);
+
+  const setTheme = (t: Theme | "light" | "dark") => {
+    setThemeState(t);
+  };
+
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+};
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+  return ctx;
+}
 // --- THEME HOOK (add near top) ---
 type Theme = 'light' | 'dark';
 
@@ -1194,7 +1251,7 @@ const Resume: React.FC = () => {
 
 const root = createRoot(document.getElementById('root')!);
 root.render(
-  <ThemeProvider attribute="class" enableSystem defaultTheme="system">
+  <ThemeProvider defaultTheme="system">
     <Resume />
   </ThemeProvider>
 );
