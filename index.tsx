@@ -60,41 +60,7 @@ export function useTheme() {
   return ctx;
 }
 // --- THEME HOOK (add near top) ---
-type Theme = 'light' | 'dark';
 
-const useTheme = () => {
-  const [theme, setTheme] = useState<Theme | null>(null);
-
-  // initialize on client only
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // try saved value
-    const saved = window.localStorage.getItem('theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      setTheme(saved);
-      document.documentElement.classList.toggle('dark', saved === 'dark');
-      return;
-    }
-
-    // otherwise use system preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = prefersDark ? 'dark' : 'light';
-    setTheme(initial);
-    document.documentElement.classList.toggle('dark', initial === 'dark');
-  }, []);
-
-  // apply changes and persist
-  useEffect(() => {
-    if (theme === null || typeof document === 'undefined') return;
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    try {
-      window.localStorage.setItem('theme', theme);
-    } catch {}
-  }, [theme]);
-
-  return { theme: theme ?? 'dark', setTheme: (t: Theme) => setTheme(t) };
-};
 // --- Types ---
 interface TiltCardProps {
   children: React.ReactNode;
