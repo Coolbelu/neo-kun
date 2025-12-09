@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI, Chat } from "@google/genai";
+import { ThemeProvider, useTheme } from 'next-themes';
 // --- THEME HOOK (add near top) ---
 type Theme = 'light' | 'dark';
 
@@ -1144,50 +1145,29 @@ const NeoKunChat: React.FC = () => {
 // --- App Root ---
 
 const Resume: React.FC = () => {
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const darkMode = theme === 'dark';
+
   const bgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-
     const handleScroll = () => {
-        if (!bgRef.current) return;
-        const y = window.scrollY;
-        // Subtle movement (5% of scroll speed)
-        bgRef.current.style.transform = `translate3d(0, -${y * 0.05}px, 0)`;
+      if (!bgRef.current) return;
+      const y = window.scrollY;
+      bgRef.current.style.transform = `translate3d(0, -${y * 0.05}px, 0)`;
     };
-    
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
-  };
+  const toggleTheme = () => setTheme(darkMode ? 'light' : 'dark');
 
   return (
     <div className="min-h-screen relative overflow-hidden selection:bg-pink-500/30">
       <GrainOverlay />
       <CustomCursor />
-      
-      {/* Background Elements */}
-      <div ref={bgRef} className="fixed inset-0 pointer-events-none z-0 will-change-transform" aria-hidden="true">
-          {/* Global Aurora Background */}
-          <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-rose-500/20 dark:bg-rose-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[80px] opacity-70 animate-blob"></div>
-                <div className="absolute top-[30%] right-[20%] w-[35vw] h-[35vw] max-w-[400px] max-h-[400px] bg-violet-500/20 dark:bg-violet-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[80px] opacity-70 animate-blob animation-delay-2000"></div>
-                <div className="absolute bottom-[20%] left-[30%] w-[45vw] h-[45vw] max-w-[600px] max-h-[600px] bg-blue-500/20 dark:bg-blue-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[80px] opacity-70 animate-blob animation-delay-4000"></div>
-          </div>
-          
-          <div className="absolute inset-0 bg-grid opacity-[0.4] dark:opacity-[0.1]"></div>
-          {/* Animated Wave Mask */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-transparent dark:from-transparent dark:via-black/80 dark:to-transparent animate-pulse-slow"></div>
-      </div>
+
+      <div ref={bgRef} className="fixed inset-0 pointer-events-none z-0 will-change-transform" />
 
       <NavBar darkMode={darkMode} toggleTheme={toggleTheme} />
 
@@ -1202,10 +1182,10 @@ const Resume: React.FC = () => {
         <Education />
         <MailTo />
       </main>
-      
+
       <NeoKunChat />
-      
-      <footer className="py-12 text-center text-slate-400 dark:text-slate-600 text-xs font-mono relative z-10 flex flex-col items-center gap-6">
+
+      <footer className="py-12 text-center text-slate-400 dark:text-slate-600 text-xs font-mono relative z-10">
         <p className="opacity-70">© {new Date().getFullYear()} Kunal Sharma. All systems nominal.</p>
       </footer>
     </div>
@@ -1213,4 +1193,8 @@ const Resume: React.FC = () => {
 };
 
 const root = createRoot(document.getElementById('root')!);
-root.render(<Resume />);
+root.render(
+  <ThemeProvider attribute="class" enableSystem defaultTheme="system">
+    <Resume />
+  </ThemeProvider>
+);
