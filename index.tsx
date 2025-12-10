@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI, Chat } from "@google/genai";
@@ -863,6 +862,42 @@ const CHAT_CONFIG = {
   }
 };
 
+const callOpenRouter = async (history: {role: string, text: string}[]) => {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": window.location.href, // Site URL for OpenRouter rankings
+        "X-Title": "Kunal Sharma Portfolio",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b:free", 
+        messages: [
+          { role: "system", content: NEO_KUN_SYSTEM_PROMPT },
+          ...history.map(m => ({
+            role: m.role === 'model' ? 'assistant' : 'user',
+            content: m.text
+          }))
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      })
+    });
+
+    if (!response.ok) {
+        throw new Error(`OpenRouter API Error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || "";
+  } catch (error) {
+    console.error("OpenRouter Call Failed:", error);
+    throw error;
+  }
+};
+
 const NeoKunExplainerModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
@@ -895,32 +930,36 @@ const NeoKunExplainerModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
             </div>
             <div>
-                <h2 id="neo-kun-title" className="text-2xl font-display font-bold text-slate-900">System <span className="text-pink-600">Manifesto</span></h2>
-                <p className="text-sm text-slate-500 font-mono">v2.5.0 // ALIGNMENT_ACTIVE</p>
+                <h2 id="neo-kun-title" className="text-2xl font-display font-bold text-slate-900">Meet <span className="text-pink-600">Neo-Kun</span></h2>
+                <p className="text-sm text-slate-500 font-mono">System Status: ONLINE // v2.5</p>
             </div>
         </div>
 
-        <div className="space-y-4 text-slate-600 leading-relaxed">
+        <div className="space-y-4 text-slate-600 leading-relaxed text-sm md:text-base">
             <p>
-                <strong className="text-slate-900">Identity:</strong> I am a heavily conditioned instance of <strong>Gemini 2.5 Flash</strong>, architected to mirror Kunal's professional cognition and linguistic patterns.
+                <strong>Who am I?</strong><br/>
+                Think of me as Kunal's "Digital Twin." I'm a custom AI agent (powered by Gemini 2.5 Flash) designed to understand and represent Kunal's professional work.
             </p>
             <p>
-                <strong className="text-slate-900">Purpose:</strong> Static portfolios are dead. I exist to provide a <strong>dynamic, interactive proof-of-work</strong>. I demonstrate Kunal's expertise in Prompt Engineering, Red Teaming, and System Design in real-time.
+                <strong>Why do I exist?</strong><br/>
+                Static resumes are boring. I exist to provide a <strong>live demonstration</strong> of Kunal's expertise in Prompt Engineering, AI Safety, and System Design. I'm not just a chatbot; I'm a proof-of-work.
             </p>
             <p>
-                 <strong className="text-slate-900">Capabilities:</strong>
+                 <strong>What can I do?</strong>
             </p>
-            <ul className="list-disc pl-5 space-y-2 text-sm">
+            <ul className="list-disc pl-5 space-y-1 text-slate-600">
                 <li>
-                    <strong>Context Switching:</strong> I fluidly toggle between "Gen Z Creative" and "Corporate Professional" modes based on semantic triggers.
+                    <strong>Shape-Shift:</strong> I switch personalities instantly. Ask me to "be professional" or "roast my code."
                 </li>
-                 <li>
-                    <strong>Adversarial Defense:</strong> I utilize a custom defensive system prompt to reject injection attacks and maintain persona integrity.
+                <li>
+                    <strong>Defend:</strong> I have built-in red teaming defenses against prompt injections.
+                </li>
+                <li>
+                    <strong>Explain:</strong> I know everything about Kunal's projects and experience.
                 </li>
             </ul>
-             <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm italic border-l-4 border-l-pink-500">
-                "I'm the difference between saying you know AI, and proving it." <br/>
-                <span className="not-italic text-xs font-bold text-slate-400 mt-2 block">— Neo-Kun</span>
+             <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm italic border-l-4 border-l-pink-500 text-slate-700">
+                "I'm the difference between saying you know AI, and proving it."
             </div>
         </div>
         
@@ -929,7 +968,7 @@ const NeoKunExplainerModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 onClick={onClose}
                 className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:scale-105 transition-transform shadow-md"
             >
-                Understood
+                Start Chatting
             </button>
         </div>
       </div>
@@ -939,12 +978,13 @@ const NeoKunExplainerModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
 
 const NeoKunChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
+  const [messages, setMessages] = useState<{role: 'user' | 'model', text: string, feedback?: 'up' | 'down'}[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [chatClient, setChatClient] = useState<Chat | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [isBackupActive, setIsBackupActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -991,6 +1031,12 @@ const NeoKunChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  const handleFeedback = (index: number, type: 'up' | 'down') => {
+      setMessages(prev => prev.map((msg, i) => 
+          i === index ? { ...msg, feedback: msg.feedback === type ? undefined : type } : msg
+      ));
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     
@@ -1015,33 +1061,31 @@ const NeoKunChat: React.FC = () => {
             setChatClient(currentChat);
          } catch(e) {
              console.error("Recovery failed", e);
-             setMessages(prev => [...prev, { role: 'model', text: "Connection failed. Please refresh." }]);
-             setIsTyping(false);
-             return;
          }
     }
 
     try {
-      const result = await currentChat.sendMessage({ message: userMsg });
-      const response = result.text;
-      setMessages(prev => [...prev, { role: 'model', text: response || "" }]);
+      // 1. Try Google GenAI
+      if (currentChat && !isBackupActive) {
+          const result = await currentChat.sendMessage({ message: userMsg });
+          const response = result.text;
+          setMessages(prev => [...prev, { role: 'model', text: response || "" }]);
+      } else {
+          // If backup is already active, direct to OpenRouter
+          throw new Error("Force Backup");
+      }
     } catch (error) {
-        console.error("Message send failed, attempting retry", error);
-        // Retry logic: Create new session and try once more
+        console.warn("Primary AI failed, attempting switch to Backup (OpenRouter)...", error);
+        
+        // 2. Fallback to OpenRouter
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const newChat = ai.chats.create({
-                ...CHAT_CONFIG,
-                history: messages.map(m => ({ 
-                    role: m.role, 
-                    parts: [{ text: m.text }] 
-                }))
-            });
-            setChatClient(newChat);
-            const result = await newChat.sendMessage({ message: userMsg });
-            setMessages(prev => [...prev, { role: 'model', text: result.text || "" }]);
-        } catch (retryError) {
-            setMessages(prev => [...prev, { role: 'model', text: "System glitch. My connection is unstable right now." }]);
+            setIsBackupActive(true); // Flag that we are now using backup
+            const history = [...messages, { role: 'user', text: userMsg }];
+            const responseText = await callOpenRouter(history as any);
+            setMessages(prev => [...prev, { role: 'model', text: responseText }]);
+        } catch (backupError) {
+             console.error("Backup failed", backupError);
+             setMessages(prev => [...prev, { role: 'model', text: "System glitch. Both primary and backup lines are unstable." }]);
         }
     } finally {
       setIsTyping(false);
@@ -1106,7 +1150,13 @@ const NeoKunChat: React.FC = () => {
                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </button>
                   </div>
-                  <span className="text-[10px] text-green-500 font-bold tracking-wide uppercase">Online</span>
+                  {isBackupActive ? (
+                       <span className="text-[9px] text-amber-500 font-bold tracking-wide uppercase flex items-center gap-1">
+                          ⚠ Backup Active
+                       </span>
+                  ) : (
+                       <span className="text-[10px] text-green-500 font-bold tracking-wide uppercase">Online</span>
+                  )}
               </div>
             </div>
             <button 
@@ -1122,12 +1172,33 @@ const NeoKunChat: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-4 space-y-4" role="log" aria-live="polite" aria-atomic="false">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-message-in`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                  m.role === 'user' 
-                    ? 'bg-gradient-to-br from-pink-600 to-purple-600 text-white rounded-br-sm' 
-                    : 'bg-white text-slate-700 rounded-bl-sm border border-slate-100'
-                }`}>
-                  {m.text}
+                <div className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                    <div className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                    m.role === 'user' 
+                        ? 'bg-gradient-to-br from-pink-600 to-purple-600 text-white rounded-br-sm' 
+                        : 'bg-white text-slate-700 rounded-bl-sm border border-slate-100'
+                    }`}>
+                    {m.text}
+                    </div>
+                    {/* Feedback Buttons for AI Messages */}
+                    {m.role === 'model' && (
+                        <div className="flex gap-2 mt-1 ml-1 opacity-60 hover:opacity-100 transition-opacity">
+                            <button 
+                                onClick={() => handleFeedback(i, 'up')}
+                                className={`p-1 rounded hover:bg-slate-100 transition-colors ${m.feedback === 'up' ? 'text-green-500' : 'text-slate-400 hover:text-green-500'}`}
+                                aria-label="Thumbs up"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" /></svg>
+                            </button>
+                            <button 
+                                onClick={() => handleFeedback(i, 'down')}
+                                className={`p-1 rounded hover:bg-slate-100 transition-colors ${m.feedback === 'down' ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
+                                aria-label="Thumbs down"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.105-1.79l-.05-.025A4 4 0 0011.055 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" /></svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
               </div>
             ))}
