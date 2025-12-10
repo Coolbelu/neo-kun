@@ -42,6 +42,234 @@ const GrainOverlay = () => (
   />
 );
 
+// Scroll Progress Bar
+const ScrollProgress = () => {
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const totalScroll = document.documentElement.scrollTop;
+            const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scroll = `${totalScroll / windowHeight}`;
+            setProgress(Number(scroll));
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    return (
+        <div className="fixed top-0 left-0 w-full h-1 z-[100003] pointer-events-none">
+            <div 
+                className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 transition-all duration-100 ease-out"
+                style={{ width: `${progress * 100}%` }}
+            />
+        </div>
+    );
+};
+
+// Neural Network Canvas Background
+const NeuralCanvas = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        let particles: { x: number, y: number, vx: number, vy: number }[] = [];
+        
+        // Configuration
+        const particleCount = window.innerWidth < 768 ? 30 : 60;
+        const connectionDistance = 150;
+        const mouseDistance = 200;
+
+        // Mouse tracking
+        let mouse = { x: -1000, y: -1000 };
+
+        const handleResize = () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        };
+
+        const handleMouseMove = (e: MouseEvent) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        };
+
+        const initParticles = () => {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5
+                });
+            }
+        };
+
+        const draw = () => {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Update and draw particles
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Bounce off edges
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                // Mouse interaction
+                const dx = mouse.x - p.x;
+                const dy = mouse.y - p.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < mouseDistance) {
+                    const forceDirectionX = dx / distance;
+                    const forceDirectionY = dy / distance;
+                    const force = (mouseDistance - distance) / mouseDistance;
+                    // Gentle repulsion
+                    p.vx -= forceDirectionX * force * 0.05;
+                    p.vy -= forceDirectionY * force * 0.05;
+                }
+
+                // Draw Particle
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(236, 72, 153, 0.5)'; // Pink-500
+                ctx.fill();
+
+                // Draw Connections
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const distX = p.x - p2.x;
+                    const distY = p.y - p2.y;
+                    const dist = Math.sqrt(distX * distX + distY * distY);
+
+                    if (dist < connectionDistance) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(100, 116, 139, ${1 - dist / connectionDistance})`; // Slate-500
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(draw);
+        };
+
+        initParticles();
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('mousemove', handleMouseMove);
+        const animId = requestAnimationFrame(draw);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('mousemove', handleMouseMove);
+            cancelAnimationFrame(animId);
+        };
+    }, []);
+
+    return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-40" />;
+};
+
+// Command Palette Component
+const CommandPalette: React.FC = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsOpen(prev => !prev);
+            }
+            if (e.key === 'Escape') {
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => inputRef.current?.focus(), 100);
+        } else {
+            setQuery('');
+        }
+    }, [isOpen]);
+
+    const actions = [
+        { id: 'home', label: 'Go to Home', icon: '🏠', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+        { id: 'projects', label: 'View Projects', icon: '🚀', action: () => document.getElementById('project-showcase')?.scrollIntoView({ behavior: 'smooth' }) },
+        { id: 'contact', label: 'Contact Me', icon: '📧', action: () => document.getElementById('mailto-section')?.scrollIntoView({ behavior: 'smooth' }) },
+        { id: 'copy', label: 'Copy Email', icon: '📋', action: () => navigator.clipboard.writeText('neo.kunal.s@proton.me') },
+        { id: 'github', label: 'GitHub (Simulated)', icon: '💻', action: () => alert('Simulated navigation to GitHub') },
+    ];
+
+    const filteredActions = actions.filter(action => 
+        action.label.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100005] flex items-start justify-center pt-[20vh] px-4">
+            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+            <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200">
+                <div className="flex items-center border-b border-slate-100 px-4 py-3">
+                    <svg className="w-5 h-5 text-slate-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input 
+                        ref={inputRef}
+                        className="flex-1 bg-transparent outline-none text-slate-700 placeholder-slate-400"
+                        placeholder="Type a command or search..."
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                    />
+                    <span className="text-xs text-slate-400 font-mono border border-slate-200 rounded px-1.5 py-0.5">ESC</span>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto py-2">
+                    {filteredActions.length > 0 ? (
+                        filteredActions.map(action => (
+                            <button
+                                key={action.id}
+                                className="w-full text-left px-4 py-3 flex items-center hover:bg-slate-50 transition-colors text-slate-700 group"
+                                onClick={() => {
+                                    action.action();
+                                    setIsOpen(false);
+                                }}
+                            >
+                                <span className="mr-3 opacity-70 group-hover:scale-110 transition-transform">{action.icon}</span>
+                                <span className="flex-1 font-medium">{action.label}</span>
+                                <span className="text-xs text-slate-300 group-hover:text-slate-500">Jump</span>
+                            </button>
+                        ))
+                    ) : (
+                        <div className="px-4 py-8 text-center text-slate-400 text-sm">
+                            No results found.
+                        </div>
+                    )}
+                </div>
+                <div className="bg-slate-50 px-4 py-2 text-[10px] text-slate-400 flex justify-between">
+                    <span>ProTip: Use arrows to navigate</span>
+                    <span>Neo-Kun System v3.0</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Magnetic Button Effect
 const Magnetic: React.FC<{ children: React.ReactElement<{ className?: string }> }> = ({ children }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -238,8 +466,8 @@ const CustomCursor: React.FC = () => {
 
   return (
     <>
-      <div ref={cursorRef} className="fixed w-3 h-3 bg-pink-500 rounded-full pointer-events-none z-[9999] mix-blend-difference hidden md:block will-change-transform" aria-hidden="true" />
-      <div ref={followerRef} className="fixed w-8 h-8 border border-pink-500/50 rounded-full pointer-events-none z-[9998] transition-opacity duration-300 hidden md:block will-change-transform" aria-hidden="true" />
+      <div ref={cursorRef} className="fixed w-3 h-3 bg-pink-500 rounded-full pointer-events-none z-[100002] mix-blend-difference hidden md:block will-change-transform" aria-hidden="true" />
+      <div ref={followerRef} className="fixed w-8 h-8 border border-pink-500/50 rounded-full pointer-events-none z-[100001] transition-opacity duration-300 hidden md:block will-change-transform" aria-hidden="true" />
     </>
   );
 };
@@ -294,6 +522,10 @@ const NavBar: React.FC = () => {
                  </span>
             </div>
         </div>
+        <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+             <span className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Cmd+K</span>
+             <span>to navigate</span>
+        </div>
         </div>
     </nav>
   );
@@ -301,24 +533,44 @@ const NavBar: React.FC = () => {
 
 const Hero: React.FC = () => {
     const [mounted, setMounted] = useState(false);
-    
+    const [terminalText, setTerminalText] = useState('');
+    const fullText = "Initialising Neural Interface... >_ Protocol: SAFETY_FIRST >_ Loaded.";
+
     useEffect(() => {
         setMounted(true);
+        let i = 0;
+        const typing = setInterval(() => {
+            setTerminalText(fullText.slice(0, i));
+            i++;
+            if (i > fullText.length) clearInterval(typing);
+        }, 30);
+        return () => clearInterval(typing);
     }, []);
 
     return (
         <section className="min-h-screen flex flex-col justify-center items-center relative px-4 pt-20 overflow-hidden" aria-label="Introduction">
+            {/* Interactive Neural Canvas Background */}
+            <NeuralCanvas />
             
-            <div className="relative z-10 text-center w-full max-w-4xl mx-auto">
+            <div className="relative z-10 text-center w-full max-w-4xl mx-auto pointer-events-none">
+            
             <div className={`inline-block mb-6 transition-all duration-1000 ease-out-expo ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <div className="px-4 py-1.5 rounded-full border border-pink-500/20 bg-pink-500/5 backdrop-blur-md">
-                    <span className="text-pink-600 text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
-                    Polyglot: En / Hi / Pu / Ja
-                    </span>
+                <div className="flex flex-col items-center gap-2">
+                     <div className="px-4 py-1.5 rounded-full border border-pink-500/20 bg-pink-500/5 backdrop-blur-md pointer-events-auto">
+                        <span className="text-pink-600 text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
+                        Polyglot: En / Hi / Pu / Ja
+                        </span>
+                    </div>
+                    {/* Terminal Boot Sequence */}
+                    <div className="h-4">
+                        <p className="font-mono text-[10px] text-slate-400 tracking-wider">
+                            {terminalText}<span className="animate-pulse">_</span>
+                        </p>
+                    </div>
                 </div>
             </div>
             
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-bold mb-8 tracking-tighter flex flex-wrap justify-center gap-x-4 gap-y-2 md:gap-x-8 cursor-default leading-[0.9]">
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-bold mb-8 tracking-tighter flex flex-wrap justify-center gap-x-4 gap-y-2 md:gap-x-8 cursor-default leading-[0.9] pointer-events-auto">
                 <div className="flex" aria-label="Kunal">
                 {"KUNAL".split("").map((char, i) => (
                     <span 
@@ -351,12 +603,12 @@ const Hero: React.FC = () => {
                 </div>
             </h1>
             
-            <p className={`text-lg md:text-2xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed font-light transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <p className={`text-lg md:text-2xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed font-light transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} pointer-events-auto`}>
                 AI Evaluation Specialist & Technical Generalist.<br/>
                 Ensuring <span className="text-slate-900 font-medium">safety</span>, <span className="text-slate-900 font-medium">fidelity</span>, and <span className="text-slate-900 font-medium">alignment</span> in LLMs.
             </p>
 
-            <div className={`flex flex-wrap justify-center gap-3 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className={`flex flex-wrap justify-center gap-3 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} pointer-events-auto`}>
                 {['AI Safety', 'Red Teaming', 'SFT', 'Rubrics', 'RLHF'].map((tag, i) => (
                     <span key={tag} className="px-5 py-2.5 rounded-xl bg-white/40 border border-white/20 backdrop-blur-md text-sm font-medium text-slate-700 shadow-sm hover:scale-105 transition-transform duration-300 cursor-default">
                         {tag}
@@ -542,7 +794,7 @@ const ProjectShowcase: React.FC = () => {
   const filtered = filter === 'All' ? projects : projects.filter(p => p.category === filter);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-32">
+    <div id="project-showcase" className="max-w-7xl mx-auto px-4 py-32">
       <RevealOnScroll>
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-2">
@@ -764,7 +1016,7 @@ const MailTo: React.FC = () => {
     };
   
     return (
-      <section className="py-32 px-4 max-w-2xl mx-auto text-center">
+      <section id="mailto-section" className="py-32 px-4 max-w-2xl mx-auto text-center">
         <RevealOnScroll>
           <div className="relative p-10 rounded-[3rem] bg-slate-900 text-white overflow-hidden group border border-slate-800">
             <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-purple-600 opacity-20 group-hover:opacity-30 transition-opacity duration-500" aria-hidden="true"></div>
@@ -931,31 +1183,43 @@ const NeoKunExplainerModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
             </div>
             <div>
                 <h2 id="neo-kun-title" className="text-2xl font-display font-bold text-slate-900">Meet <span className="text-pink-600">Neo-Kun</span></h2>
-                <p className="text-sm text-slate-500 font-mono">System Status: ONLINE // v2.5</p>
+                <p className="text-sm text-slate-500 font-mono">System Status: ONLINE // v3.0 (Stable)</p>
+            </div>
+        </div>
+
+        {/* Technical Specs Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-1">Core Model</p>
+                <p className="text-slate-900 font-bold text-sm">Gemini 2.5 Flash</p>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-1">Latency</p>
+                <p className="text-slate-900 font-bold text-sm">~150ms</p>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-1">Architecture</p>
+                <p className="text-slate-900 font-bold text-sm">Context-Aware</p>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-1">Safety</p>
+                <p className="text-slate-900 font-bold text-sm">RLHF Aligned</p>
             </div>
         </div>
 
         <div className="space-y-4 text-slate-600 leading-relaxed text-sm md:text-base">
             <p>
-                <strong>Who am I?</strong><br/>
-                Think of me as Kunal's "Digital Twin." I'm a custom AI agent (powered by Gemini 2.5 Flash) designed to understand and represent Kunal's professional work.
+                <strong>Identity:</strong> Kunal's "Digital Twin." I'm not a generic chatbot; I'm a custom-engineered proof-of-work designed to demonstrate real-time prompt engineering and system design capabilities.
             </p>
-            <p>
-                <strong>Why do I exist?</strong><br/>
-                Static resumes are boring. I exist to provide a <strong>live demonstration</strong> of Kunal's expertise in Prompt Engineering, AI Safety, and System Design. I'm not just a chatbot; I'm a proof-of-work.
-            </p>
-            <p>
-                 <strong>What can I do?</strong>
+             <p>
+                 <strong>Capabilities:</strong>
             </p>
             <ul className="list-disc pl-5 space-y-1 text-slate-600">
                 <li>
-                    <strong>Shape-Shift:</strong> I switch personalities instantly. Ask me to "be professional" or "roast my code."
+                    <strong>Dynamic Persona:</strong> Instantly switch between "Gen Z Vibe" and "Senior Engineer" modes based on context.
                 </li>
                 <li>
-                    <strong>Defend:</strong> I have built-in red teaming defenses against prompt injections.
-                </li>
-                <li>
-                    <strong>Explain:</strong> I know everything about Kunal's projects and experience.
+                    <strong>Red Teaming Defense:</strong> Hardened against prompt injection and adversarial attacks.
                 </li>
             </ul>
              <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm italic border-l-4 border-l-pink-500 text-slate-700">
@@ -1284,6 +1548,8 @@ const Resume: React.FC = () => {
     <div className="min-h-screen relative overflow-hidden selection:bg-pink-500/30">
       <GrainOverlay />
       <CustomCursor />
+      <ScrollProgress />
+      <CommandPalette />
       
       {/* Background Elements */}
       <div ref={bgRef} className="fixed inset-0 pointer-events-none z-0 will-change-transform" aria-hidden="true">
