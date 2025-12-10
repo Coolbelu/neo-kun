@@ -7,10 +7,19 @@
     <title>Kunal Sharma - AI Evaluation & Safety Specialist</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script>
+        // Suppress the Tailwind CSS CDN warning since we are in a standalone environment
+        const originalWarn = console.warn;
+        console.warn = (...args) => {
+            if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                return;
+            }
+            originalWarn.apply(console, args);
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -33,6 +42,8 @@
                         'float': 'float 6s ease-in-out infinite',
                         'fade-up': 'fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'scale-in': 'scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'scale-in-right': 'scaleInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'scale-in-left': 'scaleInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-in': 'slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'message-in': 'messageIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
@@ -69,6 +80,14 @@
                         scaleIn: {
                             '0%': { opacity: '0', transform: 'scale(0.9)' },
                             '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        scaleInRight: {
+                            '0%': { opacity: '0', transform: 'scale(0.8) translateX(-50px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateX(0)' },
+                        },
+                        scaleInLeft: {
+                            '0%': { opacity: '0', transform: 'scale(0.8) translateX(50px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateX(0)' },
                         },
                         slideIn: {
                             '0%': { opacity: '0', transform: 'translate3d(-30px, 0, 0)' },
@@ -114,17 +133,9 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
-            transition: background-color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background-color: #fafafa;
+            color: #0f172a;
             -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Dark mode grid update */
-        .dark body {
-             /* Handled by component logic but we can add global override if needed */
-        }
-        
-        .dark .bg-grid {
-             background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
         }
 
         @media (hover: none) and (pointer: coarse) {
@@ -141,7 +152,6 @@
         .glass-panel { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transform: translateZ(0); }
         .hardware-accelerated { transform: translateZ(0); backface-visibility: hidden; will-change: transform; }
         
-        /* Utility for marquee pausing */
         .pause-on-hover:hover {
             animation-play-state: paused;
         }
@@ -156,9 +166,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-[#fafafa] dark:bg-[#050505] text-slate-900 dark:text-slate-100">
+<body class="bg-[#fafafa] text-slate-900">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
